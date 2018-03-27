@@ -48,7 +48,7 @@ class Genetic:
     def reproduce(self):
         f_min = min([x[1] for x in self._fitness])
         weights=[f[1]-f_min+1 for f in self._fitness]
-        weights=[math.exp((100 - abs(f[1] - 100)) / 10) for f in self._fitness]
+        weights=[max(math.exp((-abs(f[1] - 100)) - f[0].size() ** 0.3), 1e-9) for f in self._fitness]
         mating_pool = random.choices(population=self._population,
                                      weights=weights,
                                      k=self._population_size)

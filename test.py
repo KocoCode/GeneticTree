@@ -20,7 +20,7 @@ def test_chromosome():
 def test_genetic():
     genetic = Genetic(chromosome_gen_prob=0.4,
                       population_size=100,
-                      generation_limit=40,
+                      generation_limit=500,
                       crossover_rate=1,
                       mutation_rate=0.1)
     genetic.run()
