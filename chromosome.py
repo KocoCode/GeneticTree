@@ -89,6 +89,14 @@ class Tree:
         res += "{})".format(rres)
         return res
 
+    def size(self):
+        res = 1
+        if self.lc:
+            res += self.lc.size()
+        if self.rc:
+            res += self.rc.size()
+        return res
+
 class Chromosome:
     def __init__(self, gen_prob, mutation_prob):
         self.root = Tree(probability=gen_prob)
@@ -123,6 +131,8 @@ class Chromosome:
     def eval(self):
         return self.root.eval()
 
+    def size(self):
+        return self.root.size()
 
 def main():
     chromosome = Chromosome(0.5, 0.2)
