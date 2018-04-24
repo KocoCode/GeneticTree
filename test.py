@@ -1,33 +1,47 @@
 
 
-from chromosome import Chromosome
+import matplotlib.pyplot as plt
+from statistics import mean
 from genetic import Genetic
-
-
-def test_chromosome():
-    for _ in range(10):
-        p1 = Chromosome(gen_prob=0.1, mutation_prob=0)
-        p2 = Chromosome(gen_prob=0.1, mutation_prob=0)
-        print("{} {}".format(p1.root, p1.eval()))
-        print("{} {}".format(p2.root, p2.eval()))
-        p1.crossover(p2)
-        print("{} {}".format(p1.root, p1.eval()))
-        print("{} {}".format(p2.root, p2.eval()))
-        print()
-        print()
+from chromosome import Chromosome, EVAL_BIAS
+from selection import RouletteWheelSelection, TournamentSelection
+from crossover import SinglePointCrossover, SinglePointCrossoverWithRate
+from reproduction import SimpleGeneticAlgorithmReproduction
+from mutation import BitwiseMutation
 
 
 def test_genetic():
-    genetic = Genetic(chromosome_gen_prob=0.4,
-                      population_size=100,
-                      generation_limit=500,
-                      crossover_rate=1,
-                      mutation_rate=0.1)
-    genetic.run()
+    statistics = []
+    chromosome_size = 50
+    population_size = 200
+    generation_limit = 100
+    # EVAL_BIAS is in chromosome.py
+
+    parent_selection_strategy = RouletteWheelSelection()
+    # parent_selection_strategy = TournamentSelection(size=2)
+    crossover_strategy = SinglePointCrossoverWithRate(rate=1.0)
+    reproduction_strategy = SimpleGeneticAlgorithmReproduction(
+        parent_selection_strategy = parent_selection_strategy,
+        crossover_strategy = crossover_strategy
+    )
+    mutation_strategy = BitwiseMutation(rate=0.0)
+
+    for _ in range(10):
+        genetic = Genetic(chromosome_size=chromosome_size,
+                          population_size=population_size,
+                          generation_limit=generation_limit,
+                          reproduction_strategy=reproduction_strategy,
+                          mutation_strategy=mutation_strategy)
+        statistics.append(genetic.run())
+    result = list(map(mean, zip(*statistics)))
+    result[:] = map(lambda x: x - EVAL_BIAS, result)
+    # plt.plot(list(map(lambda x: x-1000, result)))
+    plt.gca().set_ylim([0,chromosome_size + 0.5])
+    plt.plot(result)
+    plt.show()
 
 
 def main():
-    # test_chromosome()
     test_genetic()
 
 
