@@ -5,9 +5,11 @@ from statistics import mean
 from genetic import Genetic
 from chromosome import Chromosome, EVAL_BIAS
 from selection import RouletteWheelSelection, TournamentSelection
-from crossover import SinglePointCrossover, SinglePointCrossoverWithRate
+#from crossover import SinglePointCrossover, SinglePointCrossoverWithRate
+from crossover import TreeCrossover
 from reproduction import SimpleGeneticAlgorithmReproduction
-from mutation import BitwiseMutation
+#from mutation import BitwiseMutation
+from mutation import NullMutation
 
 
 def test_genetic():
@@ -19,12 +21,14 @@ def test_genetic():
 
     parent_selection_strategy = RouletteWheelSelection()
     # parent_selection_strategy = TournamentSelection(size=2)
-    crossover_strategy = SinglePointCrossoverWithRate(rate=1.0)
+    # crossover_strategy = SinglePointCrossoverWithRate(rate=1.0)
+    crossover_strategy = TreeCrossover()
     reproduction_strategy = SimpleGeneticAlgorithmReproduction(
         parent_selection_strategy = parent_selection_strategy,
         crossover_strategy = crossover_strategy
     )
-    mutation_strategy = BitwiseMutation(rate=0.0)
+#    mutation_strategy = BitwiseMutation(rate=0.0)
+    mutation_strategy = NullMutation()
 
     for _ in range(10):
         genetic = Genetic(chromosome_size=chromosome_size,

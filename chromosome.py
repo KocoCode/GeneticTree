@@ -1,142 +1,133 @@
+
+
+import math
 import random
 
-class Tree:
-    def __init__(self, parent = None, is_external = False, probability = 0):
-        self.is_external = is_external
+EVAL_BIAS = 100
+
+def gen_tree(probability=0):
+    return random.choice(InternalNode.__subclasses__())(probability=probability)
+
+class BaseNode:
+    def __init__(self, parent=None, is_external=False, probability=0,
+            children_size=1):
         self.parent = parent
-        if parent:
-            self.depth = parent.depth + 1
-            self.probability = parent.probability
+        if self.parent:
+            self.depth = self.parent.depth + 1 
+            self.probability = self.parent.probability
         else:
             self.depth = 0
             self.probability = probability
-        self.lc = None
-        self.rc = None
-
-        if self.is_external:
-            self.num = random.randint(0, 9)
-        else:
-            self.op = random.randint(0, 2)
+        self.is_external = is_external
+        self.children_size = children_size
+        self.children = []
+        self.init_children()
 
     def eval(self):
-        if self.is_external:
-            return self.num
-        else:
-            leval = self.lc.eval()
-            reval = self.rc.eval()
-            if self.op == 0:
-                return leval + reval
-            elif self.op == 1:
-                return leval - reval
-            elif self.op == 2:
-                return leval * reval
-
-    def init_child(self):
-        if random.random() < self.probability and self.depth < 100:
-            self.lc = Tree(self) 
-            self.lc.init_child()
-        else:
-            self.lc = Tree(self, True)
-
-        if random.random() < self.probability and self.depth < 100:
-            self.rc = Tree(self)
-            self.rc.init_child()
-        else:
-            self.rc = Tree(self, True)
-
-    def mutation(self, mutation_prob):
-        if self.is_external:
-            return
-        if random.random() < mutation_prob:
-            if random.random() < 0.5:
-                self.lc = Tree(self, probability=self.probability * 0.8)
-                self.lc.init_child()
-            else:
-                self.rc = Tree(self, probability=self.probability * 0.8)
-                self.rc.init_child()
-        else:
-            if random.random() < 0.5:
-                self.lc.mutation(mutation_prob)
-            else:
-                self.rc.mutation(mutation_prob)
+        raise NotImplementedError
 
     def all_node(self):
         res = [self]
-        if self.lc:
-            res += self.lc.all_node()
-        if self.rc:
-            res += self.rc.all_node()
+        for child in self.children:
+            res.extend(child.all_node())
         return res
 
     def sample(self):
-        return random.choice(self.all_node())
-    
+        return random.choice(self.all_node()) 
+
+    def init_children(self):
+        for _ in range(self.children_size):
+            if random.random() < self.probability:
+                self.children.append(random.choice(InternalNode.__subclasses__())(parent=self))
+            else:
+                self.children.append(random.choice(ExternalNode.__subclasses__())(parent=self))
+
     def __repr__(self):
-        if self.is_external:
-            return str(self.num)
-        else:
-            if self.op == 0:
-                display = "+"
-            elif self.op == 1:
-                display = "-"
-            elif self.op == 2:
-                display = "*"
         res = ""
-        res += "({}, ".format(display)
-        lres = self.lc.__repr__()
-        res += "{}, ".format(lres)
-        rres = self.rc.__repr__()
-        res += "{})".format(rres)
-        return res
+        res += "({}".format(self.display)
+        for child in self.children:
+            res += ", {}".format(child.__repr__())
+        res += ")"
+        return res 
 
-    def size(self):
-        res = 1
-        if self.lc:
-            res += self.lc.size()
-        if self.rc:
-            res += self.rc.size()
-        return res
+    def subclasses(self):
+        return BaseNode.__subclasses__()
 
-class Chromosome:
-    def __init__(self, gen_prob, mutation_prob):
-        self.root = Tree(probability=gen_prob)
-        self.root.init_child()
-        self.mutation_prob = mutation_prob
+class InternalNode(BaseNode):
+    def __init__(self, parent=None, is_external=False, probability=0,
+            children_size=0):
+        super().__init__(parent=parent, is_external=is_external,
+                probability=probability, children_size=children_size)
 
-    def mutation(self):
-        self.root.mutation(self.mutation_prob)
+class ExternalNode(BaseNode):
+    def __init__(self, parent=None, is_external=False, probability=0,
+            children_size=0):
+        super().__init__(parent=parent, is_external=is_external,
+                probability=probability, children_size=children_size)
 
-    def crossover(self, rhs):
-        lsample = self.root.sample()
-        rsample = rhs.root.sample()
-        lparent = lsample.parent
-        rparent = rsample.parent
-        if lparent:
-            if lparent.lc == lsample:
-                lparent.lc = rsample
-            else:
-                lparent.rc = rsample
-        else:
-            self.root = rsample
-        rsample.parent = lparent
-        if rparent:
-            if rparent.lc == rsample:
-                rparent.lc = lsample
-            else:
-                rparent.rc = lsample
-        else:
-            rhs.root = lsample
-        lsample.parent = rparent
+class AddNode(InternalNode):
+    display = "+"
+
+    def __init__(self, parent=None, is_external=False, probability=0):
+        super().__init__(parent=parent, is_external=is_external,
+                probability=probability, children_size=2)
 
     def eval(self):
-        return self.root.eval()
+        return self.children[0].eval() + self.children[1].eval()
 
-    def size(self):
-        return self.root.size()
+class SubNode(InternalNode):
+    display = "-"
 
-def main():
-    chromosome = Chromosome(0.5, 0.2)
+    def __init__(self, parent=None, is_external=False, probability=0):
+        super().__init__(parent=parent, is_external=is_external,
+                probability=probability, children_size=2)
 
-if __name__ == "__main__":
-    main()
+    def eval(self):
+        return self.children[0].eval() - self.children[1].eval()
 
+class MulNode(InternalNode):
+    display = "*"
+
+    def __init__(self, parent=None, is_external=False, probability=0):
+        super().__init__(parent=parent, is_external=is_external,
+                probability=probability, children_size=2)
+
+    def eval(self):
+        return self.children[0].eval() * self.children[1].eval()
+
+class NumNode(ExternalNode):
+    def __init__(self, parent=None, is_external=False, probability=0):
+        super().__init__(parent=parent, is_external=is_external,
+                probability=probability, children_size=0)
+        self.num = random.randint(-9, 9)
+        self.display = self.num
+
+    def eval(self):
+        return self.num
+
+class IfNode(InternalNode):
+    display = "If"
+
+    def __init__(self, parent=None, is_external=False, probability=0):
+        super().__init__(parent=parent, is_external=is_external,
+                probability=probability, children_size=3)
+
+    def eval(self):
+        if self.children[0].eval() > 0:
+            return self.children[1].eval()
+        else:
+            return self.children[2].eval()
+
+class Chromosome:
+    def __init__(self, probability=0):
+        self.root = gen_tree(probability=probability)
+
+    def eval(self):
+        if self.root.eval() ==  EVAL_BIAS:
+            return 20 - min(19, math.exp(len(self.root.all_node()) / 5))
+        else:
+            return math.exp(-abs(self.root.eval() - EVAL_BIAS) - len(self.root.all_node()) / 5)
+
+if __name__ == '__main__':
+    c = Chromosome(probability=0.4)
+    print(c.root, c.eval())

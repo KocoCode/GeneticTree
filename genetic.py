@@ -38,7 +38,7 @@ class Genetic:
         self.init_population()
 
     def init_population(self):
-        self._population[:] = [Chromosome(size=self._chromosome_size)
+        self._population[:] = [Chromosome(0.2)
                                for _ in range(self._population_size)]
 
     def run(self):
@@ -50,17 +50,18 @@ class Genetic:
             self.mutate()
             self.survival_selection()
             self.test_fitness()
-            # self.print_current_info()
+            self.print_current_info()
         return [x[1] for x in self._most_fit]
 
     def print_current_info(self):
         print("Generation {}".format(self._generation_count))
-        print(self._fitness)
-        print("Best Chromosome {}({}) with Fitness {}".format(
-            self._most_fit[-1][0],
-            self._most_fit[-1][0]._genes.count('1'),
-            self._most_fit[-1][1]))
-        print([x[1] for x in self._fitness])
+        #print(self._fitness)
+#         print("Best Chromosome {}({}) with Fitness {}".format(
+#             self._most_fit[-1][0],
+#             self._most_fit[-1][0]._genes.count('1'),
+#             self._most_fit[-1][1]))
+        print("Best Chromosome {} with Fitness {}".format(self._most_fit[-1][0].root, self._most_fit[-1][0].root.eval()))
+        #print([x[1] for x in self._fitness])
 
     def test_fitness(self):
         self._fitness[:] = [(c, c.eval()) for c in self._population]
