@@ -38,7 +38,7 @@ class Genetic:
         self.init_population()
 
     def init_population(self):
-        self._population[:] = [Chromosome(0.2)
+        self._population[:] = [Chromosome(1)
                                for _ in range(self._population_size)]
 
     def run(self):
@@ -60,7 +60,7 @@ class Genetic:
 #             self._most_fit[-1][0],
 #             self._most_fit[-1][0]._genes.count('1'),
 #             self._most_fit[-1][1]))
-        print("Best Chromosome {} with Fitness {}".format(self._most_fit[-1][0].root, self._most_fit[-1][0].root.eval()))
+        print("Best Chromosome {} with Fitness {}".format(self._most_fit[-1][0], self._most_fit[-1][0].eval()))
         #print([x[1] for x in self._fitness])
 
     def test_fitness(self):

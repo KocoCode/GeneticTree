@@ -10,9 +10,11 @@ from crossover import TreeCrossover
 from reproduction import SimpleGeneticAlgorithmReproduction
 #from mutation import BitwiseMutation
 from mutation import NullMutation
+import sys
 
 
 def test_genetic():
+    sys.setrecursionlimit(1000000)
     statistics = []
     chromosome_size = 50
     population_size = 200
@@ -38,11 +40,12 @@ def test_genetic():
                           mutation_strategy=mutation_strategy)
         statistics.append(genetic.run())
     result = list(map(mean, zip(*statistics)))
-    result[:] = map(lambda x: x - EVAL_BIAS, result)
+    result[:] = map(lambda x: x, result)
     # plt.plot(list(map(lambda x: x-1000, result)))
-    plt.gca().set_ylim([0,chromosome_size + 0.5])
+#    plt.gca().set_ylim([0,chromosome_size + 0.5])
     plt.plot(result)
-    plt.show()
+    plt.savefig('result.png')
+#    plt.show()
 
 
 def main():

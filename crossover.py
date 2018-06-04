@@ -17,6 +17,12 @@ class TreeCrossover(Crossover):
         pass
 
     def __call__(self, parent1, parent2):
+        for idx in range(len(parent1.trees)):
+            self.crossover(parent1.trees[idx], parent2.trees[idx])
+        
+        return copy.deepcopy(parent1), copy.deepcopy(parent2)
+
+    def crossover(self, parent1, parent2):
         lsample = parent1.root.sample()
         rsample = parent2.root.sample()
         lparent = lsample.parent
@@ -35,5 +41,3 @@ class TreeCrossover(Crossover):
         else:
             parent2.root = lsample
         lsample.parent = rparent
-        
-        return copy.deepcopy(parent1), copy.deepcopy(parent2)
