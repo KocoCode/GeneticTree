@@ -1,6 +1,7 @@
 
 
-import asyncio
+from environments import Maze
+
 import math
 import random
 
@@ -17,43 +18,91 @@ class BaseFunctionNode:
 
 class ForwardNode(BaseFunctionNode):
     display = "Forward"
-    order = [-1, 0]
+
+    def order(self, env):
+        yield -1
+        yield 0
 
     def children_size(self):
         return 1
 
-    async def accept(self, visitor):
-        visitor.env.forward()
+    def accept(self, visitor, env):
+        env.forward()
 
 class TurnLeftNode(BaseFunctionNode):
     display = "TurnLeft"
-    order = [-1, 0]
+
+    def order(self, env):
+        yield -1
+        yield 0
 
     def children_size(self):
         return 1
 
-    async def accept(self, visitor):
-        visitor.env.turn_left()
+    def accept(self, visitor, env):
+        env.turn_left()
+
+class TurnRightNode(BaseFunctionNode):
+    display = "TurnRight"
+
+    def order(self, env):
+        yield -1
+        yield 0
+
+    def children_size(self):
+        return 1
+
+    def accept(self, visitor, env):
+        env.turn_right()
 
 class EndNode(BaseFunctionNode):
     display = "End"
-    order = []
 
     def children_size(self):
         return 0
 
-    async def accept(self, visitor):
+    def order(self, env):
+        yield -1
+
+    def accept(self, visitor, env):
+        return
+
+class OracleNode(BaseFunctionNode):
+    display = "Oracle"
+
+    def children_size(self):
+        return 4
+
+    def order(self, env):
+        yield env.oracle()
+
+    def accept(self, visitor, env):
+        return
+
+class FakeOracleNode(BaseFunctionNode):
+    display = "FakeOracle"
+
+    def children_size(self):
+        return 4
+
+    def order(self, env):
+        yield random.randint(0, 3)
+
+    def accept(self, visitor, env):
         return
 
 class SubFuncCallNode(BaseFunctionNode):
     display = "SubFuncCall"
-    order = [-1, 0]
 
     def children_size(self):
         return 1
 
-    async def accept(self, visitor):
-        await visitor.visit(visitor.trees[0])
+    def order(self, env):
+        yield -1
+        yield 0
+
+    def accept(self, visitor, env):
+        visitor.visit(visitor.trees[0], env)
 
 class NodeFactory:
     node_list = []
@@ -63,10 +112,10 @@ class NodeFactory:
         return random.choice(self.node_list)
 
 class MainFuncNodeFactory(NodeFactory):
-    node_list = [ForwardNode, TurnLeftNode, SubFuncCallNode, EndNode]
+    node_list = [ForwardNode, TurnLeftNode, TurnRightNode, SubFuncCallNode, OracleNode]
 
 class SubFuncNodeFactory(NodeFactory):
-    node_list = [ForwardNode, TurnLeftNode, EndNode]
+    node_list = [ForwardNode, TurnLeftNode, TurnRightNode, OracleNode]
 
 class TreeNode:
     def __init__(self, parent=None, function_node_factory=None, probability=0):
@@ -96,16 +145,16 @@ class TreeNode:
     def sample(self):
         return random.choice(self.all_node())
 
-    async def visit(self):
-        for order in self.function_node.order:
+    def visit(self, env):
+        for order in self.function_node.order(env):
             if order == -1:
                 yield self
             else:
-                async for node in self.children[order].visit():
+                for node in self.children[order].visit(env):
                     yield node
 
-    async def accept(self, visitor):
-        await self.function_node.accept(visitor)
+    def accept(self, visitor, env):
+        self.function_node.accept(visitor, env)
 
     def __repr__(self):
         res = ""
@@ -124,65 +173,46 @@ class SubFuncTree:
         self.root = TreeNode(probability=probability, function_node_factory=function_node_factory)
 
 class Visitor:
-    def __init__(self, env, trees):
-        self.env = env
+    def __init__(self, trees):
         self.trees = trees
 
-    async def visit(self, func):
-        async for node in func.root.visit():
+    def visit(self, func, env):
+        for node in func.root.visit(env):
 #            print(node)
             if node:
-                await node.accept(self)
-
-class Environment:
-    def __init__(self):
-        self.x = 0
-        self.y = 0
-        self.direction = 0
-        self.directions = [(0, 1), (-1, 0), (0, -1), (1, 0)]
-
-    def reset(self):
-        self.x = self.y = self.direction = 0
-
-    def forward(self):
-        self.x += self.directions[self.direction][0]
-        self.y += self.directions[self.direction][1]
-
-    def turn_left(self):
-        self.direction += 1
-        self.direction %= len(self.directions)
-
-    def eval(self):
-        return math.exp((-(abs(self.x - 20) + abs(self.y - 20)) / 2))
-
-    def __repr__(self):
-        return "(x, y): ({}, {})".format(self.x, self.y)
+                node.accept(self, env)
 
 class Chromosome:
-    def __init__(self, probability=0, Env=Environment, Visitor=Visitor):
+    def __init__(self, probability=0, dataset=None, Env=Maze, Visitor=Visitor):
         self.trees = []
         self.trees.append(SubFuncTree(probability=probability))
         self.trees.append(MainFuncTree(probability=probability))
-        self.visitor = Visitor(Env(), self.trees)
+        self.visitor = Visitor(self.trees)
+        self.envs = [Maze(dataset.num_size, maze) for maze in dataset.dataset]
+        self.eval_ = 0
+        self.step_penalty = 0
 
     def eval(self):
 #        print(len(self.trees[0].root.all_node()), len(self.trees[1].root.all_node()))
-        self.visitor.env.reset()
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.visitor.visit(self.trees[-1]))
-        eval_ = self.visitor.env.eval()
-        size_penalty =  - (len(self.trees[0].root.all_node()) + len(self.trees[1].root.all_node())) / 30
-        if size_penalty < -1:
-            return 1e-8
-        if eval_ == 1:
-            return max(3 + size_penalty, 1)
-        elif eval_ > 0.5:
-            return max(eval_ + size_penalty, 1e-8)
+        self.eval_ = 0
+        self.step_penalty = 0
+        for env in self.envs:
+            env.reset()
+            self.visitor.visit(self.trees[-1], env)
+            self.eval_ += env.eval()
+            self.step_penalty -= env.step
+        self.eval_ /= len(self.envs)
+        self.step_penalty /= len(self.envs) * 200
+        size_penalty = len(self.trees[0].root.all_node()) + len(self.trees[1].root.all_node())
+        if self.step_penalty < -1 or size_penalty >= 400:
+            return 1e-12
+        if self.eval_ == 1:
+            return max(3 + self.step_penalty, 1)
         else:
-            return eval_
+            return max(self.eval_, 1e-12)
 
     def __repr__(self):
-        return "\nMain Func: {}\nSub Func: {}\nEnv: {}".format(self.trees[1].root, self.trees[0].root, self.visitor.env)
+        return "\nMain Func: {}\nSub Func: {}\nEval: {}\nStep Penalty: {}".format(self.trees[1].root, self.trees[0].root, self.eval_, self.step_penalty)
 
 if __name__ == '__main__':
     c = Chromosome(probability=0.8, Env=Environment, Visitor=Visitor)
