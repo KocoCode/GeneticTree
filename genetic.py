@@ -42,7 +42,7 @@ class Genetic:
         self.init_population()
 
     def init_population(self):
-        self._population[:] = [Chromosome(0.45, dataset=self._dataset)
+        self._population[:] = [Chromosome(0.5, dataset=self._dataset)
                                for _ in range(self._population_size)]
 
     def run(self):

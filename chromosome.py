@@ -1,6 +1,7 @@
 
 
 from environments import Maze
+from dataset import MazeDataset
 
 import math
 import random
@@ -119,10 +120,9 @@ class SubFuncNodeFactory(NodeFactory):
 
 class TreeNode:
     def __init__(self, parent=None, function_node_factory=None, probability=0):
-        self.parent = parent
-        if self.parent:
-            self.depth = self.parent.depth + 1
-            self.probability = self.parent.probability
+        if parent:
+            self.depth = parent.depth + 1
+            self.probability = parent.probability
         else:
             self.depth = 0
             self.probability = probability
@@ -133,8 +133,10 @@ class TreeNode:
         else:
             self.function_node = EndNode()
             self.children_size = 0
+        self.size = 1
         for _ in range(self.children_size):
             self.children.append(TreeNode(parent=self, function_node_factory=function_node_factory))
+            self.size += self.children[-1].size
 
     def all_node(self):
         res = [self]
@@ -143,7 +145,23 @@ class TreeNode:
         return res
 
     def sample(self):
-        return random.choice(self.all_node())
+        nodes = [[0, self]]
+
+        while nodes[-1][1].children_size: # if the node has any child
+            if 1 / nodes[-1][1].size > random.random():
+                return nodes
+
+            weights = []
+            for child in nodes[-1][1].children:
+                weights.append(child.size)
+
+            idx = random.choices(population=[i for i in range(nodes[-1][1].children_size)],
+                           weights=weights,
+                           k=1)[0]
+
+            nodes.append([idx, nodes[-1][1].children[idx]])
+
+        return nodes
 
     def visit(self, env):
         for order in self.function_node.order(env):
@@ -155,6 +173,12 @@ class TreeNode:
 
     def accept(self, visitor, env):
         self.function_node.accept(visitor, env)
+
+    def __copy__(self):
+        newone = type(self)()
+        newone.__dict__.update(self.__dict__)
+        newone.children = self.children[:]
+        return newone
 
     def __repr__(self):
         res = ""
@@ -173,10 +197,12 @@ class SubFuncTree:
         self.root = TreeNode(probability=probability, function_node_factory=function_node_factory)
 
 class Visitor:
-    def __init__(self, trees):
-        self.trees = trees
+    def __init__(self):
+        self.trees = []
 
-    def visit(self, func, env):
+    def visit(self, func, env, trees=None):
+        if trees:
+            self.trees = trees
         for node in func.root.visit(env):
 #            print(node)
             if node:
@@ -187,8 +213,9 @@ class Chromosome:
         self.trees = []
         self.trees.append(SubFuncTree(probability=probability))
         self.trees.append(MainFuncTree(probability=probability))
-        self.visitor = Visitor(self.trees)
-        self.envs = [Maze(dataset.num_size, maze) for maze in dataset.dataset]
+        self.visitor = Visitor()
+        if dataset:
+            self.envs = [Maze(dataset.num_size, maze) for maze in dataset.dataset]
         self.eval_ = 0
         self.step_penalty = 0
 
@@ -198,12 +225,12 @@ class Chromosome:
         self.step_penalty = 0
         for env in self.envs:
             env.reset()
-            self.visitor.visit(self.trees[-1], env)
+            self.visitor.visit(self.trees[-1], env, self.trees)
             self.eval_ += env.eval()
             self.step_penalty -= env.step
         self.eval_ /= len(self.envs)
         self.step_penalty /= len(self.envs) * 200
-        size_penalty = len(self.trees[0].root.all_node()) + len(self.trees[1].root.all_node())
+        size_penalty = self.trees[0].root.size + self.trees[1].root.size
         if self.step_penalty < -1 or size_penalty >= 400:
             return 1e-12
         if self.eval_ == 1:
@@ -215,7 +242,7 @@ class Chromosome:
         return "\nMain Func: {}\nSub Func: {}\nEval: {}\nStep Penalty: {}".format(self.trees[1].root, self.trees[0].root, self.eval_, self.step_penalty)
 
 if __name__ == '__main__':
-    c = Chromosome(probability=0.8, Env=Environment, Visitor=Visitor)
+    c = Chromosome(probability=0.5, dataset=MazeDataset(), Env=Maze, Visitor=Visitor)
     print(c.trees[1].root, c.trees[0].root)
     c.eval()
     print(c)
