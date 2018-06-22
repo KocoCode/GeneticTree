@@ -56,6 +56,57 @@ class TurnRightNode(BaseFunctionNode):
     def accept(self, visitor, env):
         env.turn_right()
 
+class UpNode(BaseFunctionNode):
+    display = "Up"
+
+    def order(self, env):
+        yield -1
+        yield 0
+
+    def children_size(self):
+        return 1
+
+    def accept(self, visitor, env):
+        env.up()
+
+class DownNode(BaseFunctionNode):
+    display = "Down"
+
+    def order(self, env):
+        yield -1
+        yield 0
+
+    def children_size(self):
+        return 1
+
+    def accept(self, visitor, env):
+        env.down()
+
+class LeftNode(BaseFunctionNode):
+    display = "Left"
+
+    def order(self, env):
+        yield -1
+        yield 0
+
+    def children_size(self):
+        return 1
+
+    def accept(self, visitor, env):
+        env.left()
+
+class RightNode(BaseFunctionNode):
+    display = "Right"
+
+    def order(self, env):
+        yield -1
+        yield 0
+
+    def children_size(self):
+        return 1
+    def accept(self, visitor, env):
+        env.right()
+
 class EndNode(BaseFunctionNode):
     display = "End"
 
@@ -72,7 +123,7 @@ class OracleNode(BaseFunctionNode):
     display = "Oracle"
 
     def children_size(self):
-        return 4
+        return 5
 
     def order(self, env):
         yield env.oracle()
@@ -84,10 +135,10 @@ class FakeOracleNode(BaseFunctionNode):
     display = "FakeOracle"
 
     def children_size(self):
-        return 4
+        return 5
 
     def order(self, env):
-        yield random.randint(0, 3)
+        yield random.randint(0, 4)
 
     def accept(self, visitor, env):
         return
@@ -113,10 +164,10 @@ class NodeFactory:
         return random.choice(self.node_list)
 
 class MainFuncNodeFactory(NodeFactory):
-    node_list = [ForwardNode, TurnLeftNode, TurnRightNode, SubFuncCallNode, OracleNode]
+    node_list = [UpNode, DownNode, LeftNode, RightNode, SubFuncCallNode, OracleNode]
 
 class SubFuncNodeFactory(NodeFactory):
-    node_list = [ForwardNode, TurnLeftNode, TurnRightNode, OracleNode]
+    node_list = [UpNode, DownNode, LeftNode, RightNode, OracleNode]
 
 class TreeNode:
     def __init__(self, parent=None, function_node_factory=None, probability=0):
@@ -229,12 +280,14 @@ class Chromosome:
             self.eval_ += env.eval()
             self.step_penalty -= env.step
         self.eval_ /= len(self.envs)
-        self.step_penalty /= len(self.envs) * 200
+        self.step_penalty /= len(self.envs) * 30
         size_penalty = self.trees[0].root.size + self.trees[1].root.size
-        if self.step_penalty < -1 or size_penalty >= 400:
-            return 1e-12
+        if size_penalty > 50:
+            self.eval_ = 1e-12
+            return self.eval_
         if self.eval_ == 1:
-            return max(3 + self.step_penalty, 1)
+            self.eval_ = max(3 + self.step_penalty, 1)
+            return self.eval_
         else:
             return max(self.eval_, 1e-12)
 
