@@ -127,6 +127,7 @@ class OracleNode(BaseFunctionNode):
 
     def order(self, env):
         yield env.oracle()
+        yield 4
 
     def accept(self, visitor, env):
         return
@@ -139,6 +140,7 @@ class FakeOracleNode(BaseFunctionNode):
 
     def order(self, env):
         yield random.randint(0, 4)
+        yield 4
 
     def accept(self, visitor, env):
         return
