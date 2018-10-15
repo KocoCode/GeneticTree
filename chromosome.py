@@ -201,7 +201,8 @@ class TreeNode:
         nodes = [[0, self]]
 
         while nodes[-1][1].children_size: # if the node has any child
-            if 1 / nodes[-1][1].size > random.random():
+#            if 1 / nodes[-1][1].size > random.random():
+            if 0.25 > random.random():
                 return nodes
 
             weights = []
@@ -282,13 +283,13 @@ class Chromosome:
             self.eval_ += env.eval()
             self.step_penalty -= env.step
         self.eval_ /= len(self.envs)
-        self.step_penalty /= len(self.envs) * 30
+        self.step_penalty /= len(self.envs) * 15
         size_penalty = self.trees[0].root.size + self.trees[1].root.size
-        if size_penalty > 50:
+        if size_penalty > 200:
             self.eval_ = 1e-12
             return self.eval_
         if self.eval_ == 1:
-            self.eval_ = max(3 + self.step_penalty, 1)
+            self.eval_ = max(5 + self.step_penalty, 1)
             return self.eval_
         else:
             return max(self.eval_, 1e-12)

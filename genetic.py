@@ -2,6 +2,7 @@
 
 from chromosome import Chromosome
 from dataset import MazeDataset
+from dataset import SimpleMazeDataset
 
 
 class Genetic:
@@ -37,7 +38,7 @@ class Genetic:
         self._offspring = []
 
         # list of dataset
-        self._dataset = MazeDataset()
+        self._dataset = SimpleMazeDataset()
 
         self.init_population()
 

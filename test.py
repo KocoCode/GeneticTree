@@ -11,14 +11,15 @@ from reproduction import SimpleGeneticAlgorithmReproduction
 #from mutation import BitwiseMutation
 from mutation import NullMutation
 import sys
+import json
 
 
 def test_genetic():
     sys.setrecursionlimit(1000000)
     statistics = []
     chromosome_size = 50
-    population_size = 200
-    generation_limit = 100
+    population_size = 400
+    generation_limit = 200
     # EVAL_BIAS is in chromosome.py
 
     parent_selection_strategy = RouletteWheelSelection()
@@ -46,6 +47,8 @@ def test_genetic():
     plt.plot(result)
     plt.savefig('result.png')
 #    plt.show()
+    with open('result.json', 'w') as f:
+        json.dump({'fitness': result}, f)
 
 
 def main():

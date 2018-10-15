@@ -22,8 +22,10 @@ class Maze:
         self.maze = copy.deepcopy(self.origin_maze)
 
     def forward(self):
-        self.x = (self.x + self.directions[self.direction][0]) % self.size
-        self.y = (self.y + self.directions[self.direction][1]) % self.size
+        #self.x = (self.x + self.directions[self.direction][0]) % self.size
+        #self.y = (self.y + self.directions[self.direction][1]) % self.size
+        self.x = max(0, min(self.size - 1, self.x + self.directions[self.direction][0]))
+        self.y = max(0, min(self.size - 1, self.y + self.directions[self.direction][1]))
         if self.maze[self.x][self.y] == 1:
             self.score += 1
             self.maze[self.x][self.y] = 0

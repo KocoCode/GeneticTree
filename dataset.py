@@ -22,3 +22,16 @@ class MazeDataset:
                 pos[0] += 1
             maze[pos[0]][pos[1]] = 1
         return maze
+
+class SimpleMazeDataset:
+    def __init__(self):
+        self.num_maze = 2
+        self.num_size = 5
+        self.generate_maze()
+
+    def generate_maze(self):
+        self.dataset = [[[0 for _ in range(self.num_size)] for _ in range(self.num_size)] for _ in range(self.num_maze)]
+        self.dataset[0][0][1] = self.dataset[0][0][2] = self.dataset[0][0][3] = self.dataset[0][0][4] = 1;
+        self.dataset[0][1][4] = self.dataset[0][2][4] = self.dataset[0][3][4] = self.dataset[0][4][4] = 1;
+        self.dataset[1][1][0] = self.dataset[1][2][0] = self.dataset[1][3][0] = self.dataset[1][4][0] = 1;
+        self.dataset[1][4][1] = self.dataset[1][4][2] = self.dataset[1][4][3] = self.dataset[1][4][4] = 1;
